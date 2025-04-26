@@ -35,8 +35,9 @@ function init() {
   createChart(chartContainer);
 }
 
+// Done
 function getTransactionsFromStorage() {
-  let transactions = localStorage.getItem("transaction");
+  let transactions = localStorage.getItem("transactions");
   return transactions ? JSON.parse(transactions) : [];
 }
 
@@ -50,27 +51,45 @@ let categories = JSON.parse(localStorage.getItem("categories")) || [
   "Other",
 ];
 
-let transactions = getTransactionsFromStorage();
+function pj(o) {
+  console.log(JSON.stringify(o));
+}
+
+var transactions = getTransactionsFromStorage();
+
 
 // Add transaction
 function addTransaction(e, descriptionEl, amountEl, categoryEl, dateEl) {
   e.preventDefault();
 
   const amount = parseFloat(amountEl.value);
+  if (isNaN(amount)) {
+    alert("Input invalid on Amount field")
+    return
+  }
 
   const description = descriptionEl.value;
   const category = categoryEl.value;
   const date = dateEl.value;
 
   const newTransaction = {
+    id: generateID(),
     description,
     amount,
     category,
     date,
   };
 
-  transaction.push(newTransaction);
+
+  descriptionEl.value = '';
+  amountEl.value = '';
+  dateEl.valueAsDate = new Date();
+
+  
+ 
+  transactions.push(newTransaction);
   updateLocalStorage();
+  init();
 }
 
 // Generate unique ID
@@ -80,11 +99,13 @@ function generateID() {
 
 // Update local storage
 function updateLocalStorage() {
-  localStorage.setItem("transactions", transactions);
+  localStorage.setItem("transactions", JSON.stringify(transactions));
 }
 
 // Remove transaction
 function removeTransaction(id) {
+  console.log("remove transaction",id);
+  
   transactions = transactions.filter((transaction) => transaction.id !== id);
   updateLocalStorage();
   init();
@@ -95,7 +116,7 @@ function updateValues(balanceEl, incomeEl, expenseEl) {
   const amounts = transactions.map((transaction) => transaction.amount);
 
   const total = amounts.reduce((acc, amount) => {
-    return (acc = amount);
+    return (acc + amount);
   }, 0);
 
   const income = amounts
@@ -105,19 +126,19 @@ function updateValues(balanceEl, incomeEl, expenseEl) {
   const expense = amounts
     .filter((amount) => amount < 0)
     .reduce((acc, amount) => acc - amount, 0);
-
-  balanceEl.textContent = `Rs ${total}`;
-  incomeEl.textContent = `+Rs ${income}`;
-  expenseEl.textContent = `-Rs ${Math.abs(expense)}`;
+    
+  balanceEl.textContent = `Rs ${total.toFixed(2)}`;
+  incomeEl.textContent = `+Rs ${income.toFixed(2)}`;
+  expenseEl.textContent = `-Rs ${Math.abs(expense).toFixed(2)}`;
 }
 
 // Add transactions to DOM
 function addTransactionDOM(transaction, transactionListEl) {
-  const sign = "-";
+  const sign = transaction.amount < 0 ?"-": '+';
 
   const item = document.createElement("li");
 
-  item.className = transaction.category === "income" ? "expense" : "income";
+  item.className = transaction.amout < 0 ? "expense" : "income";
 
   const detailsDiv = document.createElement("div");
   detailsDiv.className = "details";
@@ -148,6 +169,9 @@ function addTransactionDOM(transaction, transactionListEl) {
   deleteBtn.className = "delete-btn";
   deleteBtn.textContent = "×";
 
+  // changed
+  deleteBtn.onclick = () => removeTransaction(transaction.id);
+
   item.appendChild(detailsDiv);
   item.appendChild(amountSpan);
   item.appendChild(deleteBtn);
@@ -162,7 +186,7 @@ function addTransactionDOM(transaction, transactionListEl) {
 function createChart(chartContainer) {
   chartContainer.innerHTML = "";
 
-  if ((transactions.length = 0)) {
+  if ((transactions.length === 0)) {
     chartContainer.textContent = "No data to display";
     return;
   }
@@ -259,10 +283,12 @@ function createChart(chartContainer) {
     label.className = "bar-label";
     label.textContent = category;
 
+    barGroup.appendChild(bar)
+
     // Don't change the following line
     chartContainer.insertAdjacentHTML("beforeend", barGroup.outerHTML);
 
-    init();
+    // init();
   });
 }
 
@@ -276,8 +302,8 @@ function generateReport() {
     .reduce((acc, t) => acc + t.amount, 0);
 
   const totalExpense = transactions
-    .filter((t) => t.amount > 0)
-    .reduce((acc, t) => acc + t.amount, 0);
+    .filter((t) => t.amount < 0)
+    .reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
   const balance = totalIncome - totalExpense;
 
@@ -289,6 +315,13 @@ function generateReport() {
   reportText += "Expense Breakdown by Category:\n";
 
   const categorySummary = {};
+
+  // Init Categories
+  transactions.forEach((t) => {
+    if (t.amount < 0 && !categorySummary[t.category]) {
+      categorySummary[t.category] = 0;
+    }
+  });
 
   transactions.forEach((t) => {
     if (t.amount < 0) {
