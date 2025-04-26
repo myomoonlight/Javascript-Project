@@ -175,12 +175,13 @@ function addTransactionDOM(transaction, transactionListEl) {
   item.appendChild(detailsDiv);
   item.appendChild(amountSpan);
   item.appendChild(deleteBtn);
-
-  // Don't change the following line
+  
   transactionListEl.insertAdjacentHTML("beforeend", item.outerHTML);
-
-  // Don't change the following line
+  
   deleteBtn = transactionListEl.lastElementChild.querySelector(".delete-btn");
+  
+  deleteBtn.onclick = () => removeTransaction(transaction.id);
+  
 }
 
 function createChart(chartContainer) {
@@ -288,7 +289,6 @@ function createChart(chartContainer) {
     // Don't change the following line
     chartContainer.insertAdjacentHTML("beforeend", barGroup.outerHTML);
 
-    // init();
   });
 }
 
